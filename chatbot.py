@@ -88,9 +88,20 @@ prompt = PromptTemplate(
 input_variables=['context', 'question']
 )
 
+def format_docs(retrived_docs):
+  context_text = "\n\n".join(doc.page_content for doc in retrived_docs)
+  return context_text
 
+# Building the chain 
 
-# 4. Generation
+parallel_chain = RunnableParallel({
+  'context': retriever | RunnableLambda(format_docs),
+  'question': RunnablePassthrough()
+})
 
-# 5. Building chain
+parser = StrOutputParser()
+
+main_chain = parallel_chain | prompt | model | parser
+
+print(main_chain.invoke("Can you summarize the video"))
 
