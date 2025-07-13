@@ -7,7 +7,6 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
 
-
 def get_translated_transcript(video_id: str, model) -> str:
   """
     Fetches a YouTube video's transcript, detects language, and translates it to English if needed.
@@ -50,7 +49,6 @@ def get_translated_transcript(video_id: str, model) -> str:
 
   return "error"
 
-
 def build_chat_chain(transcript_text, model, embeddings):
   """
   Builds a LangChain pipeline (Retriever + Prompt + LLM) based on transcript.
@@ -66,7 +64,7 @@ def build_chat_chain(transcript_text, model, embeddings):
     template="""
     You are a helpful assistant.
         Answer ONLY from the provided transcript context.
-        If the context is insufficient, just say you don't know.
+        If the context is insufficient, Say that you don't have sufficient context most probably because the video doesn't talk about this topic but try to answer the question in a general way
 
         Context: {context}
         Question: {question}
