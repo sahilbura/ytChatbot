@@ -1,7 +1,6 @@
-from youtube_transcript_api._api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
 from langdetect import detect
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
@@ -19,16 +18,57 @@ def get_translated_transcript(video_id: str, model) -> str:
         str: Final English transcript (original or translated).
   """
   try:
-    transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+    english_codes = ['en', 'en-US', 'en-GB']
+    ytt_api = YouTubeTranscriptApi()
 
+    # 1) Try direct fetch prioritizing English
     try:
-      transcript = transcript_list.find_manually_created_transcript(['en'])
-    except:
-      transcript = transcript_list.find_transcript([t.language_code for t in transcript_list])
-    
-    transcript_chunks = transcript.fetch()
+      fetched = ytt_api.fetch(video_id, languages=english_codes)
+    except Exception:
+      fetched = None
 
-    transcript_text = " ".join(chunk.text for chunk in transcript_chunks)
+    # 2) If not found, list and pick best available (manual EN -> generated EN -> any)
+    if fetched is None:
+      try:
+        transcript_list = ytt_api.list(video_id)
+        transcript = None
+        try:
+          transcript = transcript_list.find_manually_created_transcript(english_codes)
+        except Exception:
+          transcript = None
+        if transcript is None:
+          try:
+            transcript = transcript_list.find_generated_transcript(english_codes)
+          except Exception:
+            transcript = None
+        if transcript is None:
+          try:
+            transcript = next(iter(transcript_list))
+          except Exception:
+            transcript = None
+        if transcript is not None:
+          # Translate to English if needed
+          try:
+            if getattr(transcript, "language_code", "") not in english_codes and getattr(transcript, "is_translatable", False):
+              fetched = transcript.translate('en').fetch()
+            else:
+              fetched = transcript.fetch()
+          except Exception:
+            fetched = transcript.fetch()
+      except Exception:
+        fetched = None
+
+    if fetched is None:
+      print("no transcripts found")
+      return "error"
+
+    # Build text robustly from FetchedTranscript
+    try:
+      raw = fetched.to_raw_data()
+      transcript_text = " ".join(snippet.get("text", "") for snippet in raw if snippet.get("text"))
+    except Exception:
+      # Fallback iteration (snippet objects)
+      transcript_text = " ".join(getattr(snippet, "text", "") for snippet in fetched)
 
     detected_lang = detect(transcript_text)
 
@@ -64,7 +104,7 @@ def build_chat_chain(transcript_text, model, embeddings):
     template="""
     You are a helpful assistant.
         Answer ONLY from the provided transcript context.
-        If the context is insufficient, Say that you don't have sufficient context most probably because the video doesn't talk about this topic but try to answer the question in a general way
+        if insufficient context, respond: 'Insufficient context to answer' and provide related general info labeled as such.
 
         Context: {context}
         Question: {question}
