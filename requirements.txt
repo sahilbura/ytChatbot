@@ -18,6 +18,9 @@ streamlit
 fastapi
 uvicorn[standard]
 
+# HTTP client for Groq API
+requests
+
 # Youtube api
 youtube-transcript-api
 

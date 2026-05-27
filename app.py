@@ -1,13 +1,22 @@
 import streamlit as st
 from urllib.parse import urlparse, parse_qs
 from chatbot import get_translated_transcript, build_chat_chain
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
+from embeddings_groq import GroqEmbeddings
+from groq_chat import GroqChat
 from dotenv import load_dotenv
 
 load_dotenv()
 
-model = ChatOpenAI(model="gpt-4o-mini")
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+try:
+  model = GroqChat()
+except Exception:
+  model = ChatOpenAI(model="gpt-4o-mini")
+
+try:
+  embeddings = GroqEmbeddings()
+except Exception:
+  embeddings = None
 
 st.title("ytChatbot")
 
@@ -32,7 +41,10 @@ if st.button("Let's Go!"):
             st.success("Transcript fetched successfully!")
 
             # Build and store the LangChain chatbot in session state
-            st.session_state.chain = build_chat_chain(transcript, model, embeddings)
+            try:
+              st.session_state.chain = build_chat_chain(transcript, model, embeddings)
+            except Exception:
+              st.session_state.chain = build_chat_chain(transcript, model, None)
             st.session_state.ready = True
             
           else:

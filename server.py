@@ -6,7 +6,9 @@ from urllib.parse import parse_qs, urlparse
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_openai import ChatOpenAI
+from embeddings_groq import GroqEmbeddings
+from groq_chat import GroqChat
 from pydantic import BaseModel, Field
 
 from chatbot import build_chat_chain, get_translated_transcript
@@ -24,8 +26,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model = ChatOpenAI(model="gpt-4o-mini")
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+try:
+    model = GroqChat()
+except Exception:
+    model = ChatOpenAI(model="gpt-4o-mini")
+
+try:
+    embeddings = GroqEmbeddings()
+except Exception:
+    embeddings = None
 
 sessions: dict[str, dict[str, Any]] = {}
 sessions_lock = Lock()
@@ -94,7 +103,11 @@ def create_session(payload: SessionCreateRequest) -> SessionCreateResponse:
     if not transcript or transcript == "error":
         raise HTTPException(status_code=400, detail="Could not fetch transcript")
 
-    chain = build_chat_chain(transcript, model, embeddings)
+    try:
+        chain = build_chat_chain(transcript, model, embeddings)
+    except Exception:
+        # If embedding setup fails at runtime, continue without vector embeddings.
+        chain = build_chat_chain(transcript, model, None)
     session_id = uuid4().hex
 
     with sessions_lock:

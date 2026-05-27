@@ -3,8 +3,36 @@ from langdetect import detect
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
-from langchain_core.output_parsers import StrOutputParser
+
+
+class ChatChain:
+  """Simple chat chain that uses a retriever and an LLM with `invoke()`."""
+
+  def __init__(self, retriever, prompt_template: PromptTemplate, model, default_context: str = ""):
+    self.retriever = retriever
+    self.prompt_template = prompt_template
+    self.model = model
+    self.default_context = default_context
+
+  def invoke(self, question: str) -> str:
+    # Use retriever context when available; otherwise use transcript context directly.
+    if self.retriever is not None:
+      try:
+        docs = self.retriever.get_relevant_documents(question)
+        context_text = "\n\n".join(getattr(d, "page_content", str(d)) for d in docs)
+      except Exception:
+        context_text = self.default_context
+    else:
+      context_text = self.default_context
+
+    prompt_text = self.prompt_template.format(context=context_text, question=question)
+
+    # Some models (e.g., ChatOpenAI) expose `invoke()` returning an object with `.content`
+    resp = self.model.invoke(prompt_text)
+    try:
+      return resp.content
+    except Exception:
+      return str(resp)
 
 def get_translated_transcript(video_id: str, model) -> str:
   """
@@ -96,9 +124,10 @@ def build_chat_chain(transcript_text, model, embeddings):
   splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
   chunks = splitter.create_documents([transcript_text])
 
-  vector_store = FAISS.from_documents(chunks, embeddings)
-
-  retriever = vector_store.as_retriever(search_type='similarity', search_kwargs={"k": 4})
+  retriever = None
+  if embeddings is not None:
+    vector_store = FAISS.from_documents(chunks, embeddings)
+    retriever = vector_store.as_retriever(search_type='similarity', search_kwargs={"k": 4})
 
   prompt = PromptTemplate(
     template="""
@@ -112,20 +141,9 @@ def build_chat_chain(transcript_text, model, embeddings):
   input_variables=['context', 'question']
   )
 
-  def format_docs(retrived_docs):
-    context_text = "\n\n".join(doc.page_content for doc in retrived_docs)
-    return context_text
+  # If no retriever is available, provide compact transcript context directly.
+  fallback_context = transcript_text[:12000]
 
-  # Building the chain 
-
-  parallel_chain = RunnableParallel({
-    'context': retriever | RunnableLambda(format_docs),
-    'question': RunnablePassthrough()
-  })
-
-  parser = StrOutputParser()
-
-  main_chain = parallel_chain | prompt | model | parser
-
-  return main_chain
+  # Return a simple ChatChain object compatible with existing usage (`chain.invoke(question)`).
+  return ChatChain(retriever, prompt, model, default_context=fallback_context)
 
