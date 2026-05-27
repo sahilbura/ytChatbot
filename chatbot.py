@@ -101,10 +101,16 @@ def get_translated_transcript(video_id: str, model) -> str:
     detected_lang = detect(transcript_text)
 
     if detected_lang != 'en':
-      if len(transcript_text) > 10000:
-        transcript_text = transcript_text[:10000]
-      response = model.invoke(f"You are a professional translator. Translate the following video transcript into English. Keep the meaning accurate but don't add commentary. {transcript_text}")
-      transcript_text = response.content
+      try:
+        translation_input = transcript_text[:10000] if len(transcript_text) > 10000 else transcript_text
+        response = model.invoke(
+          f"You are a professional translator. Translate the following video transcript into English. Keep the meaning accurate but don't add commentary. {translation_input}"
+        )
+        translated_text = getattr(response, "content", "").strip()
+        if translated_text:
+          transcript_text = translated_text
+      except Exception as translation_error:
+        print("translation failed, using original transcript:", translation_error)
 
     return transcript_text
 
