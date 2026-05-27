@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 const videoUrl = ref('')
 const question = ref('')
 const sessionId = ref('')
@@ -36,7 +37,7 @@ async function startSession() {
   isCreatingSession.value = true
 
   try {
-    const response = await fetch('/api/sessions', {
+    const response = await fetch(`${API_BASE_URL}/api/sessions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -81,7 +82,7 @@ async function sendQuestion() {
   isSendingMessage.value = true
 
   try {
-    const response = await fetch(`/api/sessions/${sessionId.value}/messages`, {
+    const response = await fetch(`${API_BASE_URL}/api/sessions/${sessionId.value}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
