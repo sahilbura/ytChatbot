@@ -14,6 +14,10 @@ python-dotenv
 # Streamlit for UI
 streamlit
 
+# API backend
+fastapi
+uvicorn[standard]
+
 # Youtube api
 youtube-transcript-api
 

@@ -1,6 +1,6 @@
 # ytChatbot
 
-A lightweight chatbot that lets you interact with the content of any YouTube video using Retrieval-Augmented Generation (RAG).
+A lightweight chatbot that lets you interact with the content of any YouTube video using Retrieval-Augmented Generation (RAG) through a browser frontend.
 
 Paste a video URL, and the app:
 
@@ -9,7 +9,7 @@ Paste a video URL, and the app:
 * Indexes the transcript into a vector store
 * Lets you ask questions about the video via a chatbot UI
 
-Built using **LangChain**, **OpenAI**, and **Streamlit**.
+Built using **LangChain**, **OpenAI**, **FastAPI**, and **Vue**.
 
 ---
 
@@ -19,7 +19,7 @@ Built using **LangChain**, **OpenAI**, and **Streamlit**.
 * 🌐 Auto-translates non-English transcripts to English
 * 🔍 RAG pipeline using LangChain
 * 📚 FAISS-powered vector search
-* 💬 Streamlit UI for interactive chatting
+* 💬 Browser-based chat UI for interactive chatting
 
 ---
 
@@ -30,7 +30,9 @@ Built using **LangChain**, **OpenAI**, and **Streamlit**.
 | `LangChain`              | Chaining LLM calls, building RAG pipeline              |
 | `OpenAI`                 | GPT for translation + answering, embeddings generation |
 | `FAISS`                  | Vector store for semantic search                       |
-| `Streamlit`              | UI for user interaction                                |
+| `FastAPI`                | API backend for transcript and chat sessions           |
+| `Vue`                    | Frontend user interface                                |
+| `Vite`                   | Frontend build and dev tooling                         |
 | `youtube-transcript-api` | Fetches YouTube video transcripts                      |
 | `langdetect`             | Detects language of transcripts                        |
 | `python-dotenv`          | Loads environment variables                            |
@@ -46,22 +48,36 @@ git clone https://github.com/sahilbura/ytChatBot.git
 cd ytChatBot
 ```
 
-2. **Install dependencies**
+2. **Install Python dependencies**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. **Add your OpenAI API key** to a `.env` file:
+3. **Install frontend dependencies**
+
+```bash
+cd frontend
+npm install
+```
+
+4. **Add your OpenAI API key** to a `.env` file:
 
 ```
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-4. **Run the app**
+5. **Run the backend**
 
 ```bash
-streamlit run app.py
+uvicorn server:app --reload
+```
+
+6. **Run the frontend** in a second terminal
+
+```bash
+cd frontend
+npm run dev
 ```
 
 ---
