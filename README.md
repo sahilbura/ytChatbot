@@ -1,4 +1,4 @@
-# YouTube RAG Chatbot
+# ytChatbot
 
 A lightweight chatbot that lets you interact with the content of any YouTube video using Retrieval-Augmented Generation (RAG).
 
@@ -42,8 +42,8 @@ Built using **LangChain**, **OpenAI**, and **Streamlit**.
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/yourusername/YoutubeChatbot.git
-cd YoutubeChatbot
+git clone https://github.com/sahilbura/ytChatBot.git
+cd ytChatBot
 ```
 
 2. **Install dependencies**
@@ -100,5 +100,5 @@ Try asking:
 
 ## 🙋‍♀️ Author
 
-Made with ❤️ by [Adiba Anjum](https://www.linkedin.com/in/adiba-anjum-/)
+Made with ❤️ by sahil
 Let me know what you think or suggest ideas to build next!

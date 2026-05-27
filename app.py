@@ -9,7 +9,7 @@ load_dotenv()
 model = ChatOpenAI(model="gpt-4o-mini")
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
-st.title("Youtube Chatbot")
+st.title("ytChatbot")
 
 video_url = st.text_input("Paste the URL of the Youtube Video")
 
