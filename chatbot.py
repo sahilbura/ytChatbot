@@ -98,19 +98,30 @@ def get_translated_transcript(video_id: str, model) -> str:
       # Fallback iteration (snippet objects)
       transcript_text = " ".join(getattr(snippet, "text", "") for snippet in fetched)
 
-    detected_lang = detect(transcript_text)
+    cleaned_text = transcript_text.strip()
+    if not cleaned_text:
+      print("empty transcript text")
+      return "error"
 
-    if detected_lang != 'en':
+    # langdetect is unreliable on very short text, so skip translation for tiny transcripts.
+    if len(cleaned_text.split()) >= 3:
       try:
-        translation_input = transcript_text[:10000] if len(transcript_text) > 10000 else transcript_text
-        response = model.invoke(
-          f"You are a professional translator. Translate the following video transcript into English. Keep the meaning accurate but don't add commentary. {translation_input}"
-        )
-        translated_text = getattr(response, "content", "").strip()
-        if translated_text:
-          transcript_text = translated_text
-      except Exception as translation_error:
-        print("translation failed, using original transcript:", translation_error)
+        detected_lang = detect(cleaned_text)
+      except Exception as detect_error:
+        print("language detection failed, using original transcript:", detect_error)
+        detected_lang = "en"
+
+      if detected_lang != 'en':
+        try:
+          translation_input = cleaned_text[:10000] if len(cleaned_text) > 10000 else cleaned_text
+          response = model.invoke(
+            f"You are a professional translator. Translate the following video transcript into English. Keep the meaning accurate but don't add commentary. {translation_input}"
+          )
+          translated_text = getattr(response, "content", "").strip()
+          if translated_text:
+            transcript_text = translated_text
+        except Exception as translation_error:
+          print("translation failed, using original transcript:", translation_error)
 
     return transcript_text
 
